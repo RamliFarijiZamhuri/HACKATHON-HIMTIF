@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LostFoundReport, User } from '../../../types';
-import { ShieldAlert, Search, Plus, CheckCircle, ArrowLeft, PlusCircle, Check, MessageSquare, AlertCircle, Trash2, X } from 'lucide-react';
+import { ShieldAlert, Search, Plus, CheckCircle, ArrowLeft, PlusCircle, Check, MessageSquare, AlertCircle, Trash2, X, ImagePlus } from 'lucide-react';
+
 
 interface LostFoundPageProps {
   currentUser: User;
@@ -25,6 +26,44 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
   const [formDate, setFormDate] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formContact, setFormContact] = useState('');
+  const [formPhoto, setFormPhoto] = useState<File | null>(null);
+  const [formPhotoPreview, setFormPhotoPreview] = useState<string | null>(null);
+  const formPhotoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [chatPhoto, setChatPhoto] = useState<File | null>(null);
+  const [chatPhotoPreview, setChatPhotoPreview] = useState<string | null>(null);
+  const chatPhotoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFormPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      triggerToast('Ukuran file maksimal 5MB!');
+      return;
+    }
+    setFormPhoto(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleChatPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      triggerToast('Ukuran file maksimal 3MB!');
+      return;
+    }
+    setChatPhoto(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setChatPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -48,6 +87,7 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
           location: r.location,
           date: r.created_at ? r.created_at.split('T')[0] : '',
           photoIndex: Math.floor(Math.random() * 4) + 1,
+          photoUrl: r.foto_url,
           reporterName: r.users?.nama || 'Anonymous',
           contact: r.contact,
           status: r.status as 'aktif' | 'klaim_diajukan' | 'selesai',
@@ -76,7 +116,9 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
       formData.append('description', formDesc);
       formData.append('location', formLocation);
       formData.append('contact', formContact);
-      // Not adding a 'foto' file yet, but formData ensures it goes as multipart
+      if (formPhoto) {
+        formData.append('foto', formPhoto);
+      }
 
       const response = await fetch('http://localhost:5000/api/temuan', {
         method: 'POST',
@@ -95,6 +137,9 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
         setFormDate('');
         setFormDesc('');
         setFormContact('');
+        setFormPhoto(null);
+        setFormPhotoPreview(null);
+        if (formPhotoInputRef.current) formPhotoInputRef.current.value = '';
         triggerToast(`Sukses mendaftarkan laporan barang ${formType === 'hilang' ? 'hilang' : 'ditemukan'}!`);
       } else {
         triggerToast(result.message || 'Gagal menambahkan laporan.');
@@ -107,14 +152,17 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInputText.trim() || !activeChatReport) return;
+    if ((!chatInputText.trim() && !chatPhotoPreview) || !activeChatReport) return;
 
-    const newMessage = {
+    const newMessage: any = {
       id: 'msg_' + Date.now(),
       senderName: currentUser.name,
       text: chatInputText,
       createdAt: new Date().toISOString().substring(11, 16) + ' WIB'
     };
+    if (chatPhotoPreview) {
+      newMessage.imageUrl = chatPhotoPreview;
+    }
 
     const updatedReports = reports.map(r => {
       if (r.id === activeChatReport.id) {
@@ -131,6 +179,9 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
       chatMessages: [...activeChatReport.chatMessages, newMessage]
     });
     setChatInputText('');
+    setChatPhoto(null);
+    setChatPhotoPreview(null);
+    if (chatPhotoInputRef.current) chatPhotoInputRef.current.value = '';
 
     // Trigger mock auto replies
     setTimeout(() => {
@@ -281,6 +332,11 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
                 }`}
               >
                 <div>
+                  {item.photoUrl && (
+                    <div className="aspect-video bg-slate-100 overflow-hidden rounded-xl mb-3 border border-slate-100">
+                      <img src={item.photoUrl} alt={item.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-(--color-slate-channel)">
                     <span>📅 Terjadi: {item.date}</span>
                     <span className={`px-2 py-0.5 rounded uppercase font-mono ${
@@ -348,9 +404,9 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
 
       {/* Chat stream modal */}
       {activeChatReport && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-md shadow-2xl flex flex-col h-[480px] overflow-hidden animate-[zoomIn_0.15s_ease-out]">
-            <div className="px-5 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrinks-0">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-md shadow-2xl flex flex-col h-[520px] overflow-hidden animate-[zoomIn_0.15s_ease-out]">
+            <div className="px-5 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrink-0">
               <div>
                 <h4 className="font-extrabold text-sm truncate max-w-[250px]">{activeChatReport.title}</h4>
                 <p className="text-[10px] text-slate-300">Penemu/Reporter: {activeChatReport.reporterName}</p>
@@ -383,7 +439,12 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
                         <span className="block font-bold text-[9px] mb-0.5 opacity-75">
                           {msg.senderName}
                         </span>
-                        {msg.text}
+                        {msg.imageUrl && (
+                          <div className="mb-1.5 rounded-lg overflow-hidden border border-slate-100 max-w-full">
+                            <img src={msg.imageUrl} alt="Chat attachment" className="max-h-40 object-cover w-full" />
+                          </div>
+                        )}
+                        {msg.text && <span>{msg.text}</span>}
                       </div>
                     </div>
                   );
@@ -391,25 +452,59 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
               )}
             </div>
 
-            <form onSubmit={handleSendMessage} className="p-3 border-t border-(--color-sea-fog) bg-white flex gap-2 shrinks-0">
-              <input
-                type="text"
-                placeholder="Diskusikan titik temu COD disini..."
-                value={chatInputText}
-                onChange={(e) => setChatInputText(e.target.value)}
-                className="flex-1 px-3 py-2 text-xs rounded-lg border border-(--color-sea-fog) focus:outline-none focus:border-(--color-signal-blue) text-(--color-midnight-harbor)"
-              />
-              <button type="submit" className="bg-(--color-signal-blue) text-white text-xs font-bold px-3.5 rounded-lg cursor-pointer">Kirim</button>
-            </form>
+            <div className="border-t border-(--color-sea-fog) bg-white shrink-0">
+              {chatPhotoPreview && (
+                <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                  <div className="relative w-12 h-12 rounded-lg border border-slate-200 overflow-hidden">
+                    <img src={chatPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setChatPhoto(null); setChatPhotoPreview(null); if (chatPhotoInputRef.current) chatPhotoInputRef.current.value = ''; }}
+                      className="absolute inset-0 bg-black/40 flex items-center justify-center text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">Foto terpilih untuk dikirim</span>
+                </div>
+              )}
+              <form onSubmit={handleSendMessage} className="p-3 flex gap-2 items-center">
+                <button
+                  type="button"
+                  onClick={() => chatPhotoInputRef.current?.click()}
+                  className="p-2 text-slate-500 hover:text-(--color-signal-blue) hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
+                  title="Pilih Gambar"
+                >
+                  <ImagePlus className="w-4.5 h-4.5" />
+                </button>
+                <input
+                  type="file"
+                  ref={chatPhotoInputRef}
+                  accept="image/*"
+                  onChange={handleChatPhotoSelect}
+                  className="hidden"
+                />
+                <input
+                  type="text"
+                  placeholder="Diskusikan titik temu COD disini..."
+                  value={chatInputText}
+                  onChange={(e) => setChatInputText(e.target.value)}
+                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-(--color-sea-fog) focus:outline-none focus:border-(--color-signal-blue) text-(--color-midnight-harbor)"
+                />
+                <button type="submit" className="bg-(--color-signal-blue) text-white text-xs font-bold px-3.5 py-2 rounded-lg cursor-pointer hover:bg-(--color-signal-blue)/90 transition-colors">
+                  Kirim
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Add Report Modal Dialog */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-lg shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out]">
-            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-3xl shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out] flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-1.5">
                 <PlusCircle className="w-5 h-5 text-(--color-signal-blue)" />
                 Form Laporan Kehilangan / Temuan Baru
@@ -422,108 +517,154 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
               </button>
             </div>
 
-            <form onSubmit={handleCreateReport} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Jenis Pelaporan
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormType('hilang')}
-                    className={`flex-1 py-3 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
-                      formType === 'hilang'
-                        ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
-                        : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
-                    }`}
-                  >
-                    Saya Kehilangan Barang (Mencari)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormType('temuan')}
-                    className={`flex-1 py-3 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
-                      formType === 'temuan'
-                        ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
-                        : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
-                    }`}
-                  >
-                    Saya Menemukan Barang (Finder)
-                  </button>
+            <form onSubmit={handleCreateReport} className="flex flex-col flex-grow overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Jenis Pelaporan
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormType('hilang')}
+                          className={`flex-1 py-3 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
+                            formType === 'hilang'
+                              ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
+                              : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
+                          }`}
+                        >
+                          Saya Kehilangan Barang (Mencari)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormType('temuan')}
+                          className={`flex-1 py-3 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
+                            formType === 'temuan'
+                              ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
+                              : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
+                          }`}
+                        >
+                          Saya Menemukan Barang (Finder)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Nama Barang / Judul Pelaporan
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Kunci Motor Honda Vario Merah"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Deskripsi Barang (Ciri Ciri/Kelengkapan)
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        placeholder="Sebutkan ciri-ciri umum barang (warna casing, gantungan, logo stiker), tetapi SISAKAN beberapa detail spesifik rahasia yang hanya diketahui pemilik untuk proses verifikasi nanti!"
+                        value={formDesc}
+                        onChange={(e) => setFormDesc(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Estimasi Area Kampus / Lokasi
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: Parkiran Gedung B"
+                          value={formLocation}
+                          onChange={(e) => setFormLocation(e.target.value)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Tanggal Kejadian
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={formDate}
+                          onChange={(e) => setFormDate(e.target.value)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Nomer Kontak Anda (WA / Telepon)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: 0812998877"
+                        value={formContact}
+                        onChange={(e) => setFormContact(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+
+                    {/* Foto Barang */}
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Foto Barang (Opsional)
+                      </label>
+                      <input
+                        type="file"
+                        ref={formPhotoInputRef}
+                        accept="image/*"
+                        onChange={handleFormPhotoSelect}
+                        className="hidden"
+                      />
+                      {formPhotoPreview ? (
+                        <div className="relative rounded-xl overflow-hidden border border-(--color-sea-fog) bg-slate-50">
+                          <img src={formPhotoPreview} alt="Preview barang" className="w-full max-h-40 object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => { setFormPhoto(null); setFormPhotoPreview(null); if (formPhotoInputRef.current) formPhotoInputRef.current.value = ''; }}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full cursor-pointer transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => formPhotoInputRef.current?.click()}
+                          className="w-full flex flex-col items-center justify-center gap-2 py-5 rounded-xl border-2 border-dashed border-(--color-sea-fog) hover:border-(--color-signal-blue) bg-slate-50 hover:bg-blue-50/50 cursor-pointer transition-all group"
+                        >
+                          <ImagePlus className="w-6 h-6 text-(--color-slate-channel) group-hover:text-(--color-signal-blue) transition-colors" />
+                          <span className="text-[11px] font-bold text-(--color-slate-channel) group-hover:text-(--color-signal-blue) transition-colors">Klik untuk upload foto barang</span>
+                          <span className="text-[9px] text-(--color-pale-steel)">PNG, JPG, WEBP — Maks. 5MB</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Nama Barang / Judul Pelaporan
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Kunci Motor Honda Vario Merah"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Estimasi Area Kampus / Lokasi
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: Parkiran Gedung B"
-                    value={formLocation}
-                    onChange={(e) => setFormLocation(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Tanggal Kejadian
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formDate}
-                    onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Nomer Kontak Anda (WA / Telepon)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: 0812998877"
-                  value={formContact}
-                  onChange={(e) => setFormContact(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Deskripsi Barang (Ciri Ciri/Kelengkapan)
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Sebutkan ciri-ciri umum barang (warna casing, gantungan, logo stiker), tetapi SISAKAN beberapa detail spesifik rahasia yang hanya diketahui pemilik untuk proses verifikasi nanti!"
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold text-xs">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}

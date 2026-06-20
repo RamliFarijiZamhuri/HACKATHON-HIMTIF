@@ -94,9 +94,9 @@ export default function ProfileSettingsPage({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Verification level state (0–3 per PRD)
-  const [verificationLevel, setVerificationLevel] = useState<number>(currentUser.verificationLevel ?? 1);
+  const [verificationLevel, setVerificationLevel] = useState<0 | 1 | 2 | 3>((currentUser.verificationLevel ?? 1) as 0 | 1 | 2 | 3);
   const [showVerifModal, setShowVerifModal] = useState(false);
-  const [verifModalTarget, setVerifModalTarget] = useState<number>(2);
+  const [verifModalTarget, setVerifModalTarget] = useState<0 | 1 | 2 | 3>(2);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File | null>>({});
   const [verifSubmitting, setVerifSubmitting] = useState(false);
 
@@ -579,7 +579,7 @@ export default function ProfileSettingsPage({
                           {isNext && step.level > 0 && (
                             <button
                               onClick={() => {
-                                setVerifModalTarget(step.level);
+                                setVerifModalTarget(step.level as 0 | 1 | 2 | 3);
                                 setUploadedFiles({});
                                 setShowVerifModal(true);
                               }}
@@ -605,7 +605,7 @@ export default function ProfileSettingsPage({
 
               {/* ===== VERIFICATION UPLOAD MODAL ===== */}
               {showVerifModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]">
                   <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 relative">
                     <button
                       onClick={() => setShowVerifModal(false)}
@@ -1254,7 +1254,7 @@ export default function ProfileSettingsPage({
 
           {/* ===== SPACE+ UPGRADE CHECKOUT MODAL ===== */}
           {showSpacePlusModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]">
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 relative">
                 <button
                   onClick={() => setShowSpacePlusModal(false)}

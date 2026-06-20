@@ -154,7 +154,7 @@ export default function SubscriptionPage({
 
       {/* Checkout Simulator Modal */}
       {showCheckoutModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-md shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out]">
             <div className="px-5 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center">
               <h3 className="font-bold text-sm flex items-center gap-1.5 font-mono">

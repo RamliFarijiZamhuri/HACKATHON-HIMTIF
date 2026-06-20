@@ -277,7 +277,9 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
             </div>
             {/* Right-aligned clean action icons matching general bright layout */}
             <div className="flex items-center gap-3 text-slate-450">
-              <Users className="w-4 h-4 text-slate-400" title="Anggota Komunitas" />
+              <span title="Anggota Komunitas">
+                <Users className="w-4 h-4 text-slate-400" />
+              </span>
             </div>
           </div>
 

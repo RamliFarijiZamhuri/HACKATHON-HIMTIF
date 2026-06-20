@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { KosGender, KosProperty, User } from '../../../types';
-import { Home, Search, Plus, CheckCircle, ArrowLeft, PlusCircle, Check, Eye, Trash2, X, Sparkles, Filter, ShieldAlert, Heart } from 'lucide-react';
+import { Home, Search, Plus, CheckCircle, ArrowLeft, PlusCircle, Check, Eye, Trash2, X, Sparkles, Filter, ShieldAlert, Heart, ImagePlus } from 'lucide-react';
 
 interface KosFinderPageProps {
   currentUser: User;
@@ -29,6 +29,38 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
   const [acChecked, setAcChecked] = useState(false);
   const [wcChecked, setWcChecked] = useState(true);
   const [formPhone, setFormPhone] = useState('0812');
+  const [formPhotos, setFormPhotos] = useState<File[]>([]);
+  const [formPhotoPreviews, setFormPhotoPreviews] = useState<string[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (formPhotos.length + files.length > 10) {
+      triggerToast('Maksimal 10 foto kos!');
+      return;
+    }
+    const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024);
+    if (validFiles.length < files.length) {
+      triggerToast('Beberapa foto melebihi batas 5MB dan dilewati.');
+    }
+    const newPreviews: string[] = [];
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === validFiles.length) {
+          setFormPhotoPreviews(prev => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    setFormPhotos(prev => [...prev, ...validFiles]);
+  };
+
+  const removePhoto = (index: number) => {
+    setFormPhotos(prev => prev.filter((_, i) => i !== index));
+    setFormPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -93,9 +125,12 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
       formData.append('gender', formGender);
       formData.append('jarak_kampus', formDist.toString());
       formData.append('kontak', formPhone);
-      // Backend expects JSON array for facilities, but multipart form needs it as string or multiple fields. 
-      // If the backend handles stringified arrays:
       formData.append('fasilitas', JSON.stringify(compiledFacilities));
+
+      // Append selected photos
+      formPhotos.forEach(file => {
+        formData.append('foto', file);
+      });
 
       const response = await fetch('http://localhost:5000/api/kos', {
         method: 'POST',
@@ -113,6 +148,8 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
         setFormTitle('');
         setFormAddress('');
         setFormPrice('');
+        setFormPhotos([]);
+        setFormPhotoPreviews([]);
       } else {
         triggerToast(result.message || 'Gagal menambahkan kos.');
       }
@@ -336,11 +373,19 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
                 }`}
               >
                 {/* Upper block vector and indicators */}
-                <div className="aspect-video bg-slate-100 flex items-center justify-center relative p-4 border-b border-slate-50">
-                  <div className="text-center">
-                    <Home className="w-8 h-8 text-(--color-slate-channel) mx-auto mb-1 opacity-50" />
-                    <span className="text-[10px] uppercase font-bold text-(--color-slate-channel)">Sewa Hunian Pelajar</span>
-                  </div>
+                <div className="aspect-video bg-slate-100 relative overflow-hidden border-b border-slate-50">
+                  {kos.photoUrl ? (
+                    <img
+                      src={kos.photoUrl}
+                      alt={kos.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                      <Home className="w-8 h-8 text-(--color-slate-channel) mx-auto mb-1 opacity-50" />
+                      <span className="text-[10px] uppercase font-bold text-(--color-slate-channel)">Sewa Hunian Pelajar</span>
+                    </div>
+                  )}
 
                   {/* Absolute tabs */}
                   <span className={`absolute top-2.5 left-2.5 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded ${
@@ -441,9 +486,9 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
 
       {/* Add Kos Modal Form Dialog */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-lg shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out]">
-            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-3xl shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out] flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-1.5">
                 <PlusCircle className="w-5 h-5 text-(--color-signal-blue)" />
                 Form Pendaftaran Kos Baru
@@ -456,132 +501,183 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
               </button>
             </div>
 
-            <form onSubmit={handleCreateKos} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Nama Indekos / Judul Listing
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Kos Putri Kirana Surya Kencana"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
+            <form onSubmit={handleCreateKos} className="flex flex-col flex-grow overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Nama Indekos / Judul Listing
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Kos Putri Kirana Surya Kencana"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Tarif Bulanan (IDR)
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="Misal: 800000"
+                          value={formPrice}
+                          onChange={(e) => setFormPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Aturan Gender Kos
+                        </label>
+                        <select
+                          value={formGender}
+                          onChange={(e) => setFormGender(e.target.value as KosGender)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        >
+                          <option value="putra">Khusus Putra</option>
+                          <option value="putri">Khusus Putri</option>
+                          <option value="campur">Campur</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1.5">
+                        Centang Fasilitas Bawaan Tersedia
+                      </label>
+                      <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <label className="flex items-center gap-1.5 text-xs font-bold text-(--color-midnight-harbor) cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={wifiChecked}
+                            onChange={(e) => setWifiChecked(e.target.checked)}
+                            className="rounded accent-blue-500"
+                          />
+                          Free WiFi Kenceng
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs font-bold text-(--color-midnight-harbor) cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={acChecked}
+                            onChange={(e) => setAcChecked(e.target.checked)}
+                            className="rounded accent-blue-500"
+                          />
+                          Tempat tidur AC / Blower
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs font-bold text-(--color-midnight-harbor) cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={wcChecked}
+                            onChange={(e) => setWcChecked(e.target.checked)}
+                            className="rounded accent-blue-500"
+                          />
+                          Kamar Mandi Di Dalam
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Estimasi Jarak (KM)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          required
+                          placeholder="Misal: 0.3"
+                          value={formDist}
+                          onChange={(e) => setFormDist(Number(e.target.value))}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Kontak WhatsApp
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: 08129933"
+                          value={formPhone}
+                          onChange={(e) => setFormPhone(e.target.value)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Alamat Lengkap Kos
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Jl. Surya Kencana Gg. Melati No. 4, Pamulang Barat"
+                        value={formAddress}
+                        onChange={(e) => setFormAddress(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Foto Kondisi Kos (Maks 10)
+                      </label>
+                      <div className="mt-1 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => photoInputRef.current?.click()}
+                          className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                        >
+                          <ImagePlus className="w-4 h-4 text-slate-500" />
+                          Pilih Foto
+                        </button>
+                        <input
+                          type="file"
+                          ref={photoInputRef}
+                          multiple
+                          accept="image/*"
+                          onChange={handlePhotoSelect}
+                          className="hidden"
+                        />
+                        <span className="text-[11px] text-slate-400">format JPG/PNG maks 5MB</span>
+                      </div>
+                      {formPhotoPreviews.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap gap-2 max-h-24 overflow-y-auto border border-slate-100 p-1 rounded-lg">
+                          {formPhotoPreviews.map((preview, index) => (
+                            <div key={index} className="relative w-12 h-12 border border-slate-200 rounded-lg overflow-hidden shrink-0 group">
+                              <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => removePhoto(index)}
+                                className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-4 h-4 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Tarif Bulanan (IDR Rupiah)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="Misal: 800000"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Aturan Gender Kos
-                  </label>
-                  <select
-                    value={formGender}
-                    onChange={(e) => setFormGender(e.target.value as KosGender)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  >
-                    <option value="putra">Khusus Putra</option>
-                    <option value="putri">Khusus Putri</option>
-                    <option value="campur">Campur (Bebas / Pasangan Halal)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Estimasi Jarak dari Kampus (KM)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    required
-                    placeholder="Misal: 0.3"
-                    value={formDist}
-                    onChange={(e) => setFormDist(Number(e.target.value))}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Kontak WhatsApp Terkait
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: 08129933"
-                    value={formPhone}
-                    onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Alamat Lengkap Kos
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Jl. Surya Kencana Gg. Melati No. 4, Pamulang Barat"
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1.5">
-                  Centang Fasilitas Bawaan Tersedia
-                </label>
-                <div className="flex gap-4 items-center">
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-(--color-midnight-harbor) cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={wifiChecked}
-                      onChange={(e) => setWifiChecked(e.target.checked)}
-                      className="rounded accent-blue-500"
-                    />
-                    Free WiFi Kenceng
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-(--color-midnight-harbor) cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={acChecked}
-                      onChange={(e) => setAcChecked(e.target.checked)}
-                      className="rounded accent-blue-500"
-                    />
-                    Tempat tidur AC / Blower
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-(--color-midnight-harbor) cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={wcChecked}
-                      onChange={(e) => setWcChecked(e.target.checked)}
-                      className="rounded accent-blue-500"
-                    />
-                    Kamar Mandi Di Dalam
-                  </label>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold text-xs">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold text-xs shrink-0">
                 <div className="flex items-center gap-1 text-slate-400 mr-auto max-w-[200px] leading-tight">
                   <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
                   <span>Akuntabilitas pelaporan terikat KTM Anda secara hukum.</span>

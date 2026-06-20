@@ -24,6 +24,7 @@ export interface CampusEvent {
   location: string;
   category: EventCategory;
   organizer: string;
+  posterUrl?: string;
   savedByUsers: string[]; // User IDs who saved this
   shares: number;
 }
@@ -79,6 +80,7 @@ export interface LostFoundReport {
   location: string;
   date: string;
   photoIndex: number;
+  photoUrl?: string;
   reporterName: string;
   contact: string;
   status: 'aktif' | 'klaim_diajukan' | 'selesai';
@@ -91,6 +93,7 @@ export interface ChatMessage {
   id: string;
   senderName: string;
   text: string;
+  imageUrl?: string;
   createdAt: string;
 }
 

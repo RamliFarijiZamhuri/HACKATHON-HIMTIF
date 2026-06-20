@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MarketCategory, MarketItem, User } from '../../../types';
-import { ShoppingBag, Search, Plus, CheckCircle, ArrowLeft, Tag, Phone, MessageSquare, PlusCircle, Trash2, X, Eye, Sparkles } from 'lucide-react';
+import { ShoppingBag, Search, Plus, CheckCircle, ArrowLeft, Tag, Phone, MessageSquare, PlusCircle, Trash2, X, Eye, Sparkles, ImagePlus } from 'lucide-react';
 
 interface MarketplacePageProps {
   currentUser: User;
@@ -26,6 +26,38 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
   const [formCondition, setFormCondition] = useState<'baru' | 'bekas'>('bekas');
   const [formCategory, setFormCategory] = useState<MarketCategory>('buku');
   const [formPhone, setFormPhone] = useState(currentUser.gender === 'pria' ? '0812' : '0813');
+  const [formPhotos, setFormPhotos] = useState<File[]>([]);
+  const [formPhotoPreviews, setFormPhotoPreviews] = useState<string[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (formPhotos.length + files.length > 5) {
+      triggerToast('Maksimal 5 foto barang!');
+      return;
+    }
+    const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024);
+    if (validFiles.length < files.length) {
+      triggerToast('Beberapa foto melebihi batas 5MB dan dilewati.');
+    }
+    const newPreviews: string[] = [];
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === validFiles.length) {
+          setFormPhotoPreviews(prev => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    setFormPhotos(prev => [...prev, ...validFiles]);
+  };
+
+  const removePhoto = (index: number) => {
+    setFormPhotos(prev => prev.filter((_, i) => i !== index));
+    setFormPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -98,7 +130,10 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
       formData.append('harga', formPrice.toString());
       formData.append('kondisi', formCondition);
       formData.append('kategori', formCategory);
-      // We don't have file input here yet, so no foto appended.
+      // Append selected photos
+      formPhotos.forEach(file => {
+        formData.append('foto', file);
+      });
 
       const response = await fetch('http://localhost:5000/api/marketplace', {
         method: 'POST',
@@ -121,6 +156,8 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
         setFormTitle('');
         setFormDesc('');
         setFormPrice('');
+        setFormPhotos([]);
+        setFormPhotoPreviews([]);
       } else {
         triggerToast(result.message || 'Gagal mempublikasikan listing.');
       }
@@ -280,12 +317,16 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
                     : 'border-(--color-sea-fog) hover:border-(--color-signal-blue)'
                 }`}
               >
-                {/* Image layout placeholder */}
-                <div className="aspect-video bg-slate-100 flex items-center justify-center relative p-4 border-b border-slate-100">
-                  <div className="text-center">
-                    <ShoppingBag className="w-8 h-8 text-(--color-slate-channel) mx-auto mb-1 opacity-50" />
-                    <span className="text-[10px] uppercase font-bold text-(--color-slate-channel)">{p.category} product</span>
-                  </div>
+                {/* Image layout / photo */}
+                <div className="aspect-video bg-slate-100 flex items-center justify-center relative p-4 border-b border-slate-100 overflow-hidden">
+                  {p.photoUrl ? (
+                    <img src={p.photoUrl} alt={p.title} className="w-full h-full object-cover absolute inset-0" />
+                  ) : (
+                    <div className="text-center">
+                      <ShoppingBag className="w-8 h-8 text-(--color-slate-channel) mx-auto mb-1 opacity-50" />
+                      <span className="text-[10px] uppercase font-bold text-(--color-slate-channel)">{p.category} product</span>
+                    </div>
+                  )}
 
                   {/* Absolute badgers */}
                   <span className={`absolute top-2.5 left-2.5 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${
@@ -373,7 +414,7 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
 
       {/* simulated direct deal chat modal */}
       {dealProduct && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-md shadow-2xl flex flex-col h-[500px] overflow-hidden animate-[zoomIn_0.15s_ease-out]">
             {/* Header info */}
             <div className="px-5 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrink-0">
@@ -432,9 +473,9 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
 
       {/* Add Listing Modal Form */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-lg shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out]">
-            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-3xl shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out] flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-1.5">
                 <PlusCircle className="w-5 h-5 text-(--color-signal-blue)" />
                 Form Pasang Listing Barang Baru
@@ -447,114 +488,166 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
               </button>
             </div>
 
-            <form onSubmit={handleCreateListing} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Nama Barang / Judul Listing
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Jas Almamater UNPAM size XL"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
+            <form onSubmit={handleCreateListing} className="flex flex-col flex-grow overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Nama Barang / Judul Listing
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Jas Almamater UNPAM size XL"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Harga Jual (IDR Rupiah)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="Misal: 100000"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Kategori Barang
-                  </label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as MarketCategory)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  >
-                    <option value="buku">Buku & Modul Kuliah</option>
-                    <option value="elektronik">Peralatan Elektronik</option>
-                    <option value="peralatan">Peralatan Tulis & Seminar</option>
-                    <option value="fashion">Fashion & Almamater</option>
-                    <option value="lainnya">Lainnya</option>
-                  </select>
-                </div>
-              </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Harga Jual (IDR Rupiah)
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="Misal: 100000"
+                          value={formPrice}
+                          onChange={(e) => setFormPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Kategori Barang
+                        </label>
+                        <select
+                          value={formCategory}
+                          onChange={(e) => setFormCategory(e.target.value as MarketCategory)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        >
+                          <option value="buku">Buku & Modul Kuliah</option>
+                          <option value="elektronik">Peralatan Elektronik</option>
+                          <option value="peralatan">Peralatan Tulis & Seminar</option>
+                          <option value="fashion">Fashion & Almamater</option>
+                          <option value="lainnya">Lainnya</option>
+                        </select>
+                      </div>
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Kondisi Barang
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFormCondition('bekas')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
-                        formCondition === 'bekas'
-                          ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
-                          : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
-                      }`}
-                    >
-                      Bekas (Second-hand)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormCondition('baru')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
-                        formCondition === 'baru'
-                          ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
-                          : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
-                      }`}
-                    >
-                      Baru (New)
-                    </button>
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Deskripsi Barang (Keterangan Minus/Kelebihan)
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        placeholder="Deskripsikan kondisi barang secara sejujur-jujurnya agar transaksi aman. Sertakan info tempat biasa Anda kelar kelas untuk COD di kampus..."
+                        value={formDesc}
+                        onChange={(e) => setFormDesc(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Kondisi Barang
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormCondition('bekas')}
+                            className={`flex-1 py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
+                              formCondition === 'bekas'
+                                ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
+                                : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
+                            }`}
+                          >
+                            Bekas
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormCondition('baru')}
+                            className={`flex-1 py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
+                              formCondition === 'baru'
+                                ? 'bg-(--color-midnight-harbor) text-white border-(--color-midnight-harbor)'
+                                : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor)'
+                            }`}
+                          >
+                            Baru
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Nomer WhatsApp
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: 0812998877"
+                          value={formPhone}
+                          onChange={(e) => setFormPhone(e.target.value)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Upload Foto Barang */}
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Upload Foto Barang (Maks. 5)
+                      </label>
+                      <input
+                        type="file"
+                        ref={photoInputRef}
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoSelect}
+                        className="hidden"
+                      />
+                      {formPhotoPreviews.length > 0 && (
+                        <div className="flex gap-2 mb-2 flex-wrap max-h-24 overflow-y-auto border border-slate-100 p-1 rounded-lg">
+                          {formPhotoPreviews.map((preview, idx) => (
+                            <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-(--color-sea-fog) bg-slate-50">
+                              <img src={preview} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => removePhoto(idx)}
+                                className="absolute top-0.5 right-0.5 p-0.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full cursor-pointer transition-all"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {formPhotoPreviews.length < 5 && (
+                        <button
+                          type="button"
+                          onClick={() => photoInputRef.current?.click()}
+                          className="w-full flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed border-(--color-sea-fog) hover:border-(--color-signal-blue) bg-slate-50 hover:bg-blue-50/50 cursor-pointer transition-all group"
+                        >
+                          <ImagePlus className="w-6 h-6 text-(--color-slate-channel) group-hover:text-(--color-signal-blue) transition-colors" />
+                          <span className="text-[11px] font-bold text-(--color-slate-channel) group-hover:text-(--color-signal-blue) transition-colors">Klik untuk upload foto</span>
+                          <span className="text-[9px] text-(--color-pale-steel)">PNG, JPG, WEBP — Maks. 5MB per foto</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Nomer WhatsApp untuk Hubungan
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: 0812998877"
-                    value={formPhone}
-                    onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Deskripsi Barang (Keterangan Minus/Kelebihan)
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Deskripsikan kondisi barang secara sejujur-jujurnya agar transaksi aman. Sertakan info tempat biasa Anda kelar kelas untuk COD di kampus..."
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
