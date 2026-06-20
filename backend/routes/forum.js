@@ -188,4 +188,61 @@ router.post('/:id/comment', authMiddleware, async (req, res) => {
   }
 });
 
+// ============================================================
+// POST /:id/like  —  Memberikan like pada thread
+// ============================================================
+router.post('/:id/like', authMiddleware, async (req, res) => {
+  try {
+    const threadId = req.params.id;
+
+    // 1. Ambil data thread saat ini untuk melihat jumlah upvotes sekarang
+    const { data: thread, error: fetchError } = await supabase
+      .from('forum_threads')
+      .select('upvotes')
+      .eq('id', threadId)
+      .maybeSingle();
+
+    if (fetchError || !thread) {
+      return res.status(404).json({
+        success: false,
+        message: 'Thread forum tidak ditemukan.',
+        data: null
+      });
+    }
+
+    // 2. Update jumlah upvotes (tambahkan 1 dari nilai saat ini)
+    const currentUpvotes = thread.upvotes || 0;
+    const { data: updatedThread, error: updateError } = await supabase
+      .from('forum_threads')
+      .update({ upvotes: currentUpvotes + 1 })
+      .eq('id', threadId)
+      .select('id', 'upvotes')
+      .single();
+
+    if (updateError) {
+      return res.status(400).json({
+        success: false,
+        message: `Gagal memberikan like: ${updateError.message}`,
+        data: null
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Berhasil menyukai thread ini.',
+      data: {
+        upvotes: updatedThread.upvotes
+      }
+    });
+
+  } catch (err) {
+    console.error('POST /forum/:id/like error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan pada server.',
+      data: null
+    });
+  }
+});
+
 module.exports = router;

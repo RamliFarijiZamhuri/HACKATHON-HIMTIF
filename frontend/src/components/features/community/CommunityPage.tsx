@@ -78,6 +78,8 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
       const response = await fetch('http://localhost:5000/api/forum');
       const result = await response.json();
       if (response.ok && result.success) {
+        const likedPostIds = JSON.parse(localStorage.getItem(`liked_posts_${currentUser.id}`) || '[]');
+
         // Map backend schema to frontend ForumPost type
         const mappedPosts: ForumPost[] = result.data.map((p: any) => ({
           id: p.id,
@@ -90,7 +92,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
           isAuthorPlus: false, // Update if backend adds this
           authorGender: 'pria',
           upvotes: p.upvotes || 0,
-          upvotedByUsers: [],
+          upvotedByUsers: likedPostIds.includes(p.id) ? [currentUser.id] : [],
           createdAt: p.created_at,
           comments: [] // Would need to fetch comments separately or update backend to include them
         }));
@@ -148,27 +150,53 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
     }
   };
 
-  const handleUpvote = (postId: string) => {
-    setPosts(posts.map(p => {
-      if (p.id === postId) {
-        const isAlreadyUpvoted = p.upvotedByUsers.includes(currentUser.id);
-        const nextUpvoters = isAlreadyUpvoted 
-          ? p.upvotedByUsers.filter(uid => uid !== currentUser.id)
-          : [...p.upvotedByUsers, currentUser.id];
-        
-        const updatedPost = { 
-          ...p, 
-          upvotedByUsers: nextUpvoters,
-          upvotes: nextUpvoters.length
-        };
+  const handleUpvote = async (postId: string) => {
+    const targetPost = posts.find(p => p.id === postId);
+    if (targetPost && targetPost.upvotedByUsers.includes(currentUser.id)) {
+      triggerToast('Anda sudah menyukai post ini.');
+      return;
+    }
 
-        if (selectedPost?.id === postId) {
-          setSelectedPost(updatedPost);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/forum/${postId}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        return updatedPost;
+      });
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        const likedPostIds = JSON.parse(localStorage.getItem(`liked_posts_${currentUser.id}`) || '[]');
+        if (!likedPostIds.includes(postId)) {
+          likedPostIds.push(postId);
+          localStorage.setItem(`liked_posts_${currentUser.id}`, JSON.stringify(likedPostIds));
+        }
+
+        setPosts(posts.map(p => {
+          if (p.id === postId) {
+            const nextUpvoters = [...p.upvotedByUsers, currentUser.id];
+            const updatedPost = { 
+              ...p, 
+              upvotedByUsers: nextUpvoters,
+              upvotes: result.data.upvotes
+            };
+
+            if (selectedPost?.id === postId) {
+              setSelectedPost(updatedPost);
+            }
+            return updatedPost;
+          }
+          return p;
+        }));
+      } else {
+        triggerToast(result.message || 'Gagal menyukai post.');
       }
-      return p;
-    }));
+    } catch (err) {
+      console.error('Like post error:', err);
+      triggerToast('Gagal terhubung ke server.');
+    }
   };
 
   const handleAddComment = async (e: React.FormEvent) => {
@@ -383,10 +411,11 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
                             e.stopPropagation();
                             handleUpvote(post.id);
                           }}
+                          disabled={isUpvoted}
                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all focus:outline-none ${
                             isUpvoted 
-                              ? 'bg-rose-50 text-rose-600 border border-rose-200' 
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                              ? 'bg-rose-50 text-rose-600 border border-rose-200 cursor-not-allowed' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer'
                           }`}
                         >
                           <Heart className={`w-3 h-3 ${isUpvoted ? 'fill-current text-rose-500' : 'text-slate-500'}`} />
@@ -567,9 +596,14 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
                   <button
                     onClick={() => handleUpvote(selectedPost.id)}
-                    className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-transparent text-xs font-semibold px-3 py-1.5 rounded-full text-slate-600 focus:outline-none cursor-pointer transition-all"
+                    disabled={selectedPost.upvotedByUsers.includes(currentUser.id)}
+                    className={`flex items-center gap-1.5 border text-xs font-semibold px-3 py-1.5 rounded-full focus:outline-none transition-all ${
+                      selectedPost.upvotedByUsers.includes(currentUser.id)
+                        ? 'bg-rose-50 border-rose-200 text-rose-600 cursor-not-allowed'
+                        : 'bg-slate-100 hover:bg-slate-200 border-transparent text-slate-600 cursor-pointer'
+                    }`}
                   >
-                    <ThumbsUp className="w-3.5 h-3.5 text-slate-500" />
+                    <ThumbsUp className={`w-3.5 h-3.5 ${selectedPost.upvotedByUsers.includes(currentUser.id) ? 'text-rose-500 fill-current' : 'text-slate-500'}`} />
                     <span>Upvote ({selectedPost.upvotes})</span>
                   </button>
 
