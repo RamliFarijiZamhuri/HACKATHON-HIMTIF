@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CampusEvent, EventCategory, User } from '../../../types';
-import { Calendar, MapPin, Share2, Plus, Clock, Bookmark, Search, CheckCircle, ArrowLeft, Filter, CalendarPlus, X } from 'lucide-react';
+import { Calendar, MapPin, Share2, Plus, Clock, Bookmark, Search, CheckCircle, ArrowLeft, Filter, CalendarPlus, X, ImagePlus, Trash2 } from 'lucide-react';
 
 interface EventPageProps {
   currentUser: User;
@@ -53,6 +53,22 @@ export default function EventPage({
   const [formTime, setFormTime] = useState('');
   const [formLocation, setFormLocation] = useState('');
   const [formCategory, setFormCategory] = useState<EventCategory>('seminar');
+  const [formPosterPreview, setFormPosterPreview] = useState<string | null>(null);
+  const posterInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePosterSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      triggerToast('Ukuran file poster maksimal 5MB!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormPosterPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -70,9 +86,9 @@ export default function EventPage({
 
   const filteredEvents = events.filter((e) => {
     const matchesCat = activeCategory === 'all' || e.category === activeCategory;
-    const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          e.organizer.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.organizer.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
 
@@ -114,6 +130,7 @@ export default function EventPage({
         setFormDate('');
         setFormTime('');
         setFormLocation('');
+        setFormPosterPreview(null);
         setShowAddModal(false);
         triggerToast('Sukses mempublikasikan event kampus baru!');
       } else {
@@ -146,7 +163,7 @@ export default function EventPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      
+
       {/* Toast Alert */}
       {toastMessage && (
         <div className="fixed top-20 right-4 z-50 bg-(--color-midnight-harbor) text-white text-sm font-bold py-3.5 px-6 rounded-xl border border-blue-400/30 shadow-2xl flex items-center gap-2 animate-[slideIn_0.2s_ease-out]">
@@ -208,11 +225,10 @@ export default function EventPage({
             <button
               key={cat.value}
               onClick={() => setActiveCategory(cat.value)}
-              className={`whitespace-nowrap px-4 py-2 text-xs font-bold rounded-full cursor-pointer border transition-all ${
-                activeCategory === cat.value
+              className={`whitespace-nowrap px-4 py-2 text-xs font-bold rounded-full cursor-pointer border transition-all ${activeCategory === cat.value
                   ? 'bg-(--color-signal-blue) border-(--color-signal-blue) text-white shadow-sm'
                   : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor) hover:bg-slate-50'
-              }`}
+                }`}
             >
               {cat.label}
             </button>
@@ -235,6 +251,13 @@ export default function EventPage({
                 key={evt.id}
                 className="bg-white rounded-2xl flex flex-col justify-between border border-(--color-sea-fog) hover:border-(--color-signal-blue) shadow-md hover:shadow-xl transition-all duration-300"
               >
+                {/* Poster Image */}
+                {evt.posterUrl && (
+                  <div className="aspect-video bg-slate-100 overflow-hidden rounded-t-2xl">
+                    <img src={evt.posterUrl} alt={evt.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+
                 {/* Upper Details */}
                 <div className="p-6">
                   {/* Category Pill and Share */}
@@ -289,18 +312,17 @@ export default function EventPage({
                   <span className="text-[11px] font-bold text-(--color-slate-channel) font-mono">
                     {evt.savedByUsers.length} Mahasiswa Menyimpan
                   </span>
-                  
+
                   <button
                     onClick={() => {
                       handleSaveEvent(evt.id);
                       const isSaved = evt.savedByUsers.includes(currentUser.id);
                       triggerToast(isSaved ? 'Berhasil menghapus event dari kalender Anda' : 'Sukses menyimpan event ke kalender Anda!');
                     }}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                      isSaved
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${isSaved
                         ? 'bg-(--color-midnight-harbor) border-(--color-midnight-harbor) text-white'
                         : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor) hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
                     {isSaved ? 'Tersimpan' : 'Gabung Event'}
@@ -315,9 +337,9 @@ export default function EventPage({
 
       {/* Add Event Modal Form */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-xl shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out]">
-            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-(--color-sea-fog) w-full max-w-3xl shadow-2xl overflow-hidden animate-[zoomIn_0.15s_ease-out] flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 bg-(--color-midnight-harbor) text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-1.5">
                 <CalendarPlus className="w-5 h-5 text-(--color-signal-blue)" />
                 Form Publikasi Event Kampus
@@ -330,110 +352,155 @@ export default function EventPage({
               </button>
             </div>
 
-            <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Nama Event / Judul Kegiatan
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Seminar Hackathon Web 2026"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
+            <form onSubmit={handleCreateEvent} className="flex flex-col flex-grow overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Nama Event / Judul Kegiatan
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Seminar Hackathon Web 2026"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Penyelenggara / Unit Organisasi
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: HIMA TI UNPAM"
-                    value={formOrganizer}
-                    onChange={(e) => setFormOrganizer(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Penyelenggara / Unit Organisasi
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: HIMA TI UNPAM"
+                        value={formOrganizer}
+                        onChange={(e) => setFormOrganizer(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Kategori Kegiatan
+                      </label>
+                      <select
+                        value={formCategory}
+                        onChange={(e) => setFormCategory(e.target.value as EventCategory)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      >
+                        <option value="seminar">Seminar / Webinar</option>
+                        <option value="lomba">Kompetisi / Lomba</option>
+                        <option value="sosial">Bakti Sosial / PMI</option>
+                        <option value="akademik">Akademik Kampus</option>
+                        <option value="organisasi">Kegiatan Organisasi</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Deskripsi Lengkap Event
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        placeholder="Deskripsikan agenda kegiatan, manfaat, narasumber, dan ketentuan SKPI lainnya..."
+                        value={formDesc}
+                        onChange={(e) => setFormDesc(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Tanggal Kegiatan
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={formDate}
+                          onChange={(e) => setFormDate(e.target.value)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                          Waktu Kegiatan
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Misal: 08:00 - 12:00 WIB"
+                          value={formTime}
+                          onChange={(e) => setFormTime(e.target.value)}
+                          className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Lokasi / Ruangan Kampus
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Misal: Aula Lantai 8 Gedung B (Darsono) UNPAM"
+                        value={formLocation}
+                        onChange={(e) => setFormLocation(e.target.value)}
+                        className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
+                      />
+                    </div>
+
+                    {/* Upload Poster */}
+                    <div>
+                      <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
+                        Upload Poster Kegiatan
+                      </label>
+                      <input
+                        type="file"
+                        ref={posterInputRef}
+                        accept="image/*"
+                        onChange={handlePosterSelect}
+                        className="hidden"
+                      />
+                      {formPosterPreview ? (
+                        <div className="relative rounded-xl overflow-hidden border border-(--color-sea-fog) bg-slate-50">
+                          <img src={formPosterPreview} alt="Preview poster" className="w-full max-h-40 object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => { setFormPosterPreview(null); if (posterInputRef.current) posterInputRef.current.value = ''; }}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full cursor-pointer transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => posterInputRef.current?.click()}
+                          className="w-full flex flex-col items-center justify-center gap-2 py-5 rounded-xl border-2 border-dashed border-(--color-sea-fog) hover:border-(--color-signal-blue) bg-slate-50 hover:bg-blue-50/50 cursor-pointer transition-all group"
+                        >
+                          <ImagePlus className="w-6 h-6 text-(--color-slate-channel) group-hover:text-(--color-signal-blue) transition-colors" />
+                          <span className="text-[11px] font-bold text-(--color-slate-channel) group-hover:text-(--color-signal-blue) transition-colors">Klik untuk upload poster event</span>
+                          <span className="text-[9px] text-(--color-pale-steel)">PNG, JPG, WEBP — Maks. 5MB</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Kategori Kegiatan
-                  </label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as EventCategory)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  >
-                    <option value="seminar">Seminar / Webinar</option>
-                    <option value="lomba">Kompetisi / Lomba</option>
-                    <option value="sosial">Bakti Sosial / PMI</option>
-                    <option value="akademik">Akademik Kampus</option>
-                    <option value="organisasi">Kegiatan Organisasi</option>
-                  </select>
-                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Deskripsi Lengkap Event
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Deskripsikan agenda kegiatan, manfaat, narasumber, dan ketentuan SKPI lainnya..."
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Tanggal Kegiatan
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formDate}
-                    onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                    Waktu Kegiatan
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Misal: 08:00 - 12:00 WIB"
-                    value={formTime}
-                    onChange={(e) => setFormTime(e.target.value)}
-                    className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-(--color-midnight-harbor) uppercase tracking-wide mb-1">
-                  Lokasi / Ruangan Kampus
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Aula Lantai 8 Gedung B (Darsono) UNPAM"
-                  value={formLocation}
-                  onChange={(e) => setFormLocation(e.target.value)}
-                  className="w-full bg-white px-3.5 py-2.5 text-sm rounded-lg border border-(--color-sea-fog) focus:border-(--color-signal-blue) focus:outline-none text-(--color-midnight-harbor)"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 font-semibold shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}

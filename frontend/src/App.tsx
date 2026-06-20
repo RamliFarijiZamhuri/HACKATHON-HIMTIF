@@ -222,7 +222,7 @@ export default function App() {
 
       {/* Overlay Policy Documents Modal */}
       {policyModalTitle && policyModalContent && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl border border-(--color-sea-fog) max-w-md w-full shadow-2xl p-6 relative animate-[zoomIn_0.15s_ease-out]">
             <button
               onClick={() => {
