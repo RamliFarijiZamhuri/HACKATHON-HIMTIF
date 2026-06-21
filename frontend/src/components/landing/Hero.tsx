@@ -29,7 +29,7 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
       if (!isDeleting) {
         // Typing characters
         setCurrentText(fullPhrase.substring(0, currentText.length + 1));
-        
+
         if (currentText === fullPhrase) {
           // Pause before deleting
           setTypingSpeed(2000); // 2 seconds pause
@@ -40,7 +40,7 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
       } else {
         // Deleting characters
         setCurrentText(fullPhrase.substring(0, currentText.length - 1));
-        
+
         if (currentText === '') {
           setIsDeleting(false);
           setCurrentPhraseIndex((prev) => (prev + 1) % TYPEWRITER_PHRASES.length);
@@ -58,7 +58,7 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
   return (
     <div className="relative isolate overflow-hidden bg-[#f8fafc] z-10 px-4 pt-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl text-center flex flex-col items-center">
-        
+
         {/* Dynamic Badge */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -71,11 +71,12 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
         </motion.div>
 
         {/* Big Stamped Title */}
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
           animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
           transition={{ duration: 0.6 }}
-          className="text-4xl font-black tracking-tight text-(--color-midnight-harbor) sm:text-5xl md:text-8xl font-sans"
+          className="text-4xl tracking-tight text-(--color-midnight-harbor) sm:text-5xl md:text-8xl"
+          style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 900 }}
         >
           UNPAM SPACE
         </motion.h1>
@@ -111,7 +112,7 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
             Mulai Sekarang
             <ArrowRight className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={onLearnMore}
             className="w-full sm:w-auto rounded-lg border border-(--color-sea-fog) bg-white px-6 py-3 text-sm font-bold text-(--color-midnight-harbor) hover:bg-slate-50 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1"
@@ -122,7 +123,7 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
         </motion.div>
 
         {/* Quick Trust statistics bar */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.8 }}
