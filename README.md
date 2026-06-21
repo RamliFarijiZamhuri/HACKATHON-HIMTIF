@@ -4,7 +4,7 @@
 
 **Unpam Space** adalah platform digital terpadu untuk mahasiswa Universitas Pamulang (Unpam) — satu ruang yang menghubungkan info event kampus, pencarian kos, jual beli barang, penemuan barang hilang, komunitas/forum gaya Discord, dan denah kampus interaktif dalam satu aplikasi web yang terverifikasi.
 
-Dibangun untuk submission **Hackathon HIMTIF 2026**.
+Dibangun untuk **Hackathon HIMTIF 2026**.
 
 ---
 
