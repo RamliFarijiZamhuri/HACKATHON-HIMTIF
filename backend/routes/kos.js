@@ -131,4 +131,63 @@ router.post('/', authMiddleware, upload.array('foto', 10), async (req, res) => {
   }
 });
 
+// ============================================================
+// DELETE /:id  —  Hapus data kos (Hanya pemilik yang bisa)
+// ============================================================
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Cek kepemilikan
+    const { data: listing, error: checkError } = await supabase
+      .from('kos_listings')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Listing kos tidak ditemukan.',
+        data: null,
+      });
+    }
+
+    if (listing.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Anda tidak memiliki akses untuk menghapus listing ini.',
+        data: null,
+      });
+    }
+
+    // 2. Hapus data
+    const { error: deleteError } = await supabase
+      .from('kos_listings')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      return res.status(500).json({
+        success: false,
+        message: `Gagal menghapus listing: ${deleteError.message}`,
+        data: null,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Listing kos berhasil dihapus.',
+      data: null,
+    });
+  } catch (err) {
+    console.error('DELETE /kos/:id error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan pada server.',
+      data: null,
+    });
+  }
+});
+
 module.exports = router;

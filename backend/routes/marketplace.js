@@ -120,5 +120,63 @@ router.post('/', authMiddleware, upload.array('foto', 5), async (req, res) => {
     });
   }
 });
+// ============================================================
+// DELETE /:id  —  Hapus listing (Hanya pemilik yang bisa)
+// ============================================================
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Cek kepemilikan
+    const { data: listing, error: checkError } = await supabase
+      .from('marketplace_listings')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Listing tidak ditemukan.',
+        data: null,
+      });
+    }
+
+    if (listing.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Anda tidak memiliki akses untuk menghapus listing ini.',
+        data: null,
+      });
+    }
+
+    // 2. Hapus data
+    const { error: deleteError } = await supabase
+      .from('marketplace_listings')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      return res.status(500).json({
+        success: false,
+        message: `Gagal menghapus listing: ${deleteError.message}`,
+        data: null,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Listing berhasil dihapus.',
+      data: null,
+    });
+  } catch (err) {
+    console.error('DELETE /marketplace/:id error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan pada server.',
+      data: null,
+    });
+  }
+});
 
 module.exports = router;
