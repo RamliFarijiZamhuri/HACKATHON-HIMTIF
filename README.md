@@ -144,7 +144,7 @@ Environment variables (`.env`) untuk koneksi Supabase, JWT secret, dan konfigura
 - Verifikasi dokumen otomatis
 - Unpam Space+ (Subscription) & Boost Pay-per-Use
 
-Detail roadmap Q3 2025–Q2 2026 dan tabel risiko & mitigasi ada di bagian 12–13 PRD.
+Detail roadmap ada di PPT Pitch Deck
 
 ---
 
