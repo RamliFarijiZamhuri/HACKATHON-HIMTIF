@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const supabase = require('../lib/supabase');
 const authMiddleware = require('../middleware/auth.middleware');
-const User = require('../models/user');
+const User = require('../models/User');
 
 // Helper to hash password
 function hashPassword(password) {
