@@ -16,10 +16,8 @@ Dibangun untuk **Hackathon HIMTIF 2026**.
 - [Sistem Verifikasi](#-sistem-verifikasi)
 - [Model Monetisasi](#-model-monetisasi)
 - [Tech Stack](#-tech-stack)
-- [Struktur Folder](#-struktur-folder)
 - [Cara Menjalankan](#-cara-menjalankan)
 - [Tim](#-tim)
-- [Status Project](#-status-project)
 
 ---
 
