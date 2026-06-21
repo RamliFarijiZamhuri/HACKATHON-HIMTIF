@@ -139,7 +139,7 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps) {
           </div>
           <div className="flex flex-col items-center">
             <span className="text-xl sm:text-3xl font-extrabold text-(--color-midnight-harbor) font-mono tracking-tight">1,200+</span>
-            <span className="text-[10px] sm:text-xs text-(--color-pale-steel) uppercase font-bold tracking-widest">Umpan Forum</span>
+            <span className="text-[10px] sm:text-xs text-(--color-pale-steel) uppercase font-bold tracking-widest">Unpam Forum</span>
           </div>
         </motion.div>
 
