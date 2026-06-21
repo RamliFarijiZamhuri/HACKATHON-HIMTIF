@@ -22,16 +22,16 @@ export default function Navbar({
   return (
     <header className="sticky top-0 z-50 w-full border-b border-(--color-sea-fog) bg-white/80 backdrop-blur-md transition-all duration-300">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        
+
         {/* Logo Wordmark */}
         <button
           onClick={() => currentUser ? setActiveTab('main') : setActiveTab('landing')}
-          className="flex items-center gap-2.5 cursor-pointer group focus:outline-none"
+          className="flex items-center gap-0 cursor-pointer group focus:outline-none"
           id="nav-logo"
         >
-          <Logo size={36} className="group-hover:scale-105 transition-transform duration-200" />
-          <span className="text-2xl font-extrabold tracking-tight text-(--color-midnight-harbor) transition-colors">
-            Unpam<span className="text-(--color-signal-blue)">Space</span>
+          <Logo size={40} className="group-hover:scale-105 transition-transform duration-200 translate-x-2 " />
+          <span className="text-2xl tracking-tight text-(--color-midnight-harbor) transition-colors" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 900 }}>
+            NPAM<span className="text-(--color-signal-blue)">SPACE</span>
           </span>
         </button>
 
@@ -111,7 +111,7 @@ export default function Navbar({
               >
                 Fitur Unggulan
               </button>
-              
+
               <button
                 onClick={() => setActiveTab('login')}
                 className="text-sm font-semibold text-(--color-midnight-harbor) hover:text-(--color-signal-blue) cursor-pointer transition-colors"
@@ -119,7 +119,7 @@ export default function Navbar({
               >
                 Masuk
               </button>
-              
+
               <button
                 onClick={() => setActiveTab('register')}
                 className="rounded-full bg-(--color-signal-blue) px-4 py-2 text-sm font-semibold text-white cursor-pointer shadow-md hover:opacity-90 transition-all hover:scale-103"
