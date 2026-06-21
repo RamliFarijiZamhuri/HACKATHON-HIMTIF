@@ -49,7 +49,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
     setShowCreateForm(false);
     
     try {
-      const response = await fetch(`http://localhost:5000/api/forum/${post.id}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${post.id}`);
       const result = await response.json();
       if (response.ok && result.success) {
         // Map backend comments to frontend ForumComment type
@@ -75,7 +75,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/forum');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum`);
       const result = await response.json();
       if (response.ok && result.success) {
         const likedPostIds = JSON.parse(localStorage.getItem(`liked_posts_${currentUser.id}`) || '[]');
@@ -118,7 +118,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/forum', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/forum/${postId}/like`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${postId}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -205,7 +205,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/forum/${selectedPost.id}/comment`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${selectedPost.id}/comment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

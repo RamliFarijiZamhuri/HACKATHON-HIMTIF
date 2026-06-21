@@ -153,7 +153,7 @@ export default function ProfileSettingsPage({
     setSpacePlusSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/user/upgrade-space-plus', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user/upgrade-space-plus`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -713,7 +713,7 @@ export default function ProfileSettingsPage({
                         setVerifSubmitting(true);
                         try {
                           const token = localStorage.getItem('token');
-                          const response = await fetch('http://localhost:5000/api/user/upgrade-verification', {
+                          const response = await fetch(`${import.meta.env.VITE_API_URL}/user/upgrade-verification`, {
                             method: 'PUT',
                             headers: {
                               'Content-Type': 'application/json',

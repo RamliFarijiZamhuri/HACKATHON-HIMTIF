@@ -76,7 +76,7 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
 
   const fetchReports = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/temuan');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/temuan`);
       const result = await response.json();
       if (response.ok && result.success) {
         const mappedReports: LostFoundReport[] = result.data.map((r: any) => ({
@@ -120,7 +120,7 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
         formData.append('foto', formPhoto);
       }
 
-      const response = await fetch('http://localhost:5000/api/temuan', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/temuan`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

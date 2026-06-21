@@ -23,7 +23,7 @@ export default function EventPage({
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/event');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/event`);
       const result = await response.json();
       if (response.ok && result.success) {
         const mappedEvents: CampusEvent[] = result.data.map((e: any) => ({
@@ -119,7 +119,7 @@ export default function EventPage({
         formData.append('poster', formPoster);
       }
 
-      const response = await fetch('http://localhost:5000/api/event', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/event`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

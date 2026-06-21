@@ -73,7 +73,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
 
   const fetchKosList = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/kos');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/kos`);
       const result = await response.json();
       if (response.ok && result.success) {
         const mappedKos: KosProperty[] = result.data.map((k: any) => ({
@@ -132,7 +132,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
         formData.append('foto', file);
       });
 
-      const response = await fetch('http://localhost:5000/api/kos', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/kos`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

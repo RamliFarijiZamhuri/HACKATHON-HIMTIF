@@ -79,7 +79,7 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/marketplace');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/marketplace`);
       const result = await response.json();
       if (response.ok && result.success) {
         const mappedProducts: MarketItem[] = result.data.map((p: any) => ({
@@ -135,7 +135,7 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
         formData.append('foto', file);
       });
 
-      const response = await fetch('http://localhost:5000/api/marketplace', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/marketplace`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
