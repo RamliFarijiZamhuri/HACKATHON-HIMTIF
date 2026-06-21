@@ -97,6 +97,10 @@ app.use((err, req, res, _next) => {
 // ============================================================
 // START SERVER
 // ============================================================
-app.listen(PORT, () => {
-  console.log(`🚀 UNPAM Space API running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 UNPAM Space API running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
