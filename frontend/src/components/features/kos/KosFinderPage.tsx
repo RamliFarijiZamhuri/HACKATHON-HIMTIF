@@ -221,20 +221,28 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
     const parsedKosPrice = parseInt(String(k.priceMonthly), 10) || 0;
     const parsedMaxPrice = parseInt(String(maxPrice), 10) || 0;
     const matchesPrice = parsedKosPrice <= parsedMaxPrice;
-    
-    const matchesSearch = k.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          k.address.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesSearch = k.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      k.address.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesGender && matchesPrice && matchesSearch;
   });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      
-      {/* Toast Alert */}
+
+      {/* Premium Toast Alert */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-(--color-midnight-harbor) text-white text-sm font-bold py-3.5 px-6 rounded-xl border border-blue-400/30 shadow-2xl flex items-center gap-2 animate-[slideIn_0.2s_ease-out]">
-          <CheckCircle className="w-4 h-4 text-amber-400" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-24 right-6 z-[9999] bg-white/80 backdrop-blur-xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-4 rounded-2xl min-w-[320px] max-w-[400px] flex items-start gap-4 animate-toast transition-all">
+          <div className="flex-shrink-0 bg-gradient-to-tr from-(--color-signal-blue) to-indigo-400 rounded-full p-2.5 shadow-lg shadow-indigo-500/30">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div className="flex-1 pt-0.5">
+            <h4 className="text-[13px] font-extrabold text-(--color-midnight-harbor) tracking-wide mb-1">Pemberitahuan Sistem</h4>
+            <p className="text-xs font-semibold text-(--color-slate-channel) leading-relaxed">{toastMessage}</p>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors focus:outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
       )}
 
@@ -304,7 +312,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
                 </span>
                 <h4 className="font-extrabold text-xs text-(--color-midnight-harbor) line-clamp-1 mb-1">{kos.title}</h4>
                 <p className="font-black text-xs text-emerald-600 mb-2">{formatRupiah(kos.priceMonthly)}</p>
-                
+
                 <div className="space-y-1.5 text-[11px] font-semibold text-(--color-slate-channel) pt-2 border-t border-slate-50">
                   <p>📍 Jarak: <span className="text-slate-800">{kos.distanceFromCampus} KM ke UNPAM</span></p>
                   <p className="leading-relaxed">🔹 Fasilitas: <span className="text-slate-800 font-mono text-[10px] block mt-0.5">{kos.facilities.join(', ')}</span></p>
@@ -317,7 +325,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
 
       {/* Filter and Price Range Sizing sliders */}
       <div className="bg-(--color-ice-tint) rounded-2xl p-5 mb-8 border border-(--color-sea-fog) grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        
+
         {/* Search bar Area */}
         <div className="lg:col-span-4 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color-slate-channel)" />
@@ -333,7 +341,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
         {/* Gender rule toggler keys */}
         <div className="lg:col-span-4 flex items-center gap-1.5 overflow-x-auto">
           {[
-            { value: 'all', label: 'Semu Aturan' },
+            { value: 'all', label: 'Semua Aturan' },
             { value: 'putra', label: 'Khusus Putra' },
             { value: 'putri', label: 'Khusus Putri' },
             { value: 'campur', label: 'Campur (Keluarga)' }
@@ -341,11 +349,10 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
             <button
               key={g.value}
               onClick={() => setActiveGender(g.value)}
-              className={`px-3 py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${
-                activeGender === g.value
+              className={`px-3 py-2 text-xs font-bold rounded-lg border cursor-pointer transition-all ${activeGender === g.value
                   ? 'bg-(--color-signal-blue) border-(--color-signal-blue) text-white'
                   : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor) hover:bg-slate-50'
-              }`}
+                }`}
             >
               {g.label}
             </button>
@@ -387,11 +394,10 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
             return (
               <div
                 key={kos.id}
-                className={`bg-white rounded-2xl border overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between ${
-                  kos.isBoosted 
-                    ? 'border-amber-300 ring-2 ring-amber-50' 
+                className={`bg-white rounded-2xl border overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between ${kos.isBoosted
+                    ? 'border-amber-300 ring-2 ring-amber-50'
                     : 'border-(--color-sea-fog) hover:border-(--color-signal-blue)'
-                }`}
+                  }`}
               >
                 {/* Upper block vector and indicators */}
                 <div className="aspect-video bg-slate-100 relative overflow-hidden border-b border-slate-50">
@@ -409,10 +415,9 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
                   )}
 
                   {/* Absolute tabs */}
-                  <span className={`absolute top-2.5 left-2.5 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded ${
-                    kos.gender === 'putra' ? 'bg-blue-100 text-blue-800' :
-                    kos.gender === 'putri' ? 'bg-pink-100 text-pink-800' : 'bg-purple-100 text-purple-800'
-                  }`}>
+                  <span className={`absolute top-2.5 left-2.5 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded ${kos.gender === 'putra' ? 'bg-blue-100 text-blue-800' :
+                      kos.gender === 'putri' ? 'bg-pink-100 text-pink-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
                     Kos {kos.gender}
                   </span>
 
@@ -465,11 +470,10 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
                 <div className="bg-(--color-ice-tint) px-5 py-3 border-t border-(--color-sea-fog) flex items-center gap-1.5">
                   <button
                     onClick={() => handleAddToCompare(kos)}
-                    className={`flex-1 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all text-center flex justify-center items-center gap-1 ${
-                      isSelectedToCompare
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all text-center flex justify-center items-center gap-1 ${isSelectedToCompare
                         ? 'bg-(--color-slate-channel) border-(--color-slate-channel) text-white'
                         : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor) hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     {isSelectedToCompare ? <Check className="w-3 h-3" /> : null}
                     {isSelectedToCompare ? 'Terpilih' : 'Hubungkan Banding'}

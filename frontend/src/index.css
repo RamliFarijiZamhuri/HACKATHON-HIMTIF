@@ -45,3 +45,19 @@
   border-radius: 9999px;
 }
 
+@keyframes toastEnter {
+  0% { 
+    transform: translate3d(100px, 0, 0) scale(0.9); 
+    opacity: 0; 
+    filter: blur(4px); 
+  }
+  100% { 
+    transform: translate3d(0, 0, 0) scale(1); 
+    opacity: 1; 
+    filter: blur(0); 
+  }
+}
+
+.animate-toast {
+  animation: toastEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
