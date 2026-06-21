@@ -159,9 +159,27 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
     }
   };
 
-  const handleDeleteKos = (id: string) => {
-    setKosList(kosList.filter(k => k.id !== id));
-    triggerToast('Listing kos berhasil dihapus!');
+  const handleDeleteKos = async (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus listing kos ini?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/kos/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setKosList(kosList.filter(k => k.id !== id));
+        triggerToast('Listing kos berhasil dihapus!');
+      } else {
+        triggerToast(result.message || 'Gagal menghapus listing kos.');
+      }
+    } catch (err) {
+      console.error('Delete kos error:', err);
+      triggerToast('Gagal terhubung ke server.');
+    }
   };
 
   const toggleFavorite = (id: string) => {

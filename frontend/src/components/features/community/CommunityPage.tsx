@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ForumCategory, ForumPost, User, ForumComment } from '../../../types';
-import { MessageSquare, Heart, Plus, Search, Tag, ArrowLeft, Send, Sparkles, Hash, Users, ThumbsUp, HelpCircle, CheckCircle } from 'lucide-react';
+import { MessageSquare, Heart, Plus, Search, Tag, ArrowLeft, Send, Sparkles, Hash, Users, ThumbsUp, HelpCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { MascotAvatar } from '../../layout/MascotAvatar';
 
 interface CommunityPageProps {
@@ -146,6 +146,30 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
       }
     } catch (err) {
       console.error('Create post error:', err);
+      triggerToast('Gagal terhubung ke server.');
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm('Yakin ingin menghapus thread forum ini?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setPosts(posts.filter(p => p.id !== postId));
+        if (selectedPost?.id === postId) setSelectedPost(null);
+        triggerToast('Thread berhasil dihapus!');
+      } else {
+        triggerToast(result.message || 'Gagal menghapus thread.');
+      }
+    } catch (err) {
+      console.error('Delete post error:', err);
       triggerToast('Gagal terhubung ke server.');
     }
   };
@@ -427,9 +451,24 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
                         </div>
                       </div>
 
-                      <span className="text-slate-400 text-[10px] font-normal font-sans">
-                        {displayTime}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 text-[10px] font-normal font-sans">
+                          {displayTime}
+                        </span>
+                        {post.authorId === currentUser.id && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePost(post.id);
+                            }}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer transition-all focus:outline-none"
+                            title="Hapus thread ini"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </button>
                 );

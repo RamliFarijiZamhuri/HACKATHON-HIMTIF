@@ -17,6 +17,7 @@ export type EventCategory = 'akademik' | 'organisasi' | 'lomba' | 'sosial' | 'se
 
 export interface CampusEvent {
   id: string;
+  userId?: string; // Creator user ID
   title: string;
   description: string;
   date: string;

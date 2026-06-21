@@ -167,9 +167,27 @@ export default function MarketplacePage({ currentUser, onGoBack }: MarketplacePa
     }
   };
 
-  const handleDeleteListing = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
-    triggerToast('Listing berhasil dihapus!');
+  const handleDeleteListing = async (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus listing ini?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/marketplace/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setProducts(products.filter(p => p.id !== id));
+        triggerToast('Listing berhasil dihapus!');
+      } else {
+        triggerToast(result.message || 'Gagal menghapus listing.');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      triggerToast('Gagal terhubung ke server.');
+    }
   };
 
   const handleBoostListing = (id: string) => {

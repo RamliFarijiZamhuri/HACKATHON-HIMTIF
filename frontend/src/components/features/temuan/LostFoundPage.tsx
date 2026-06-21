@@ -150,6 +150,29 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
     }
   };
 
+  const handleDeleteReport = async (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus laporan barang ini?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/temuan/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setReports(reports.filter(r => r.id !== id));
+        triggerToast('Laporan berhasil dihapus!');
+      } else {
+        triggerToast(result.message || 'Gagal menghapus laporan.');
+      }
+    } catch (err) {
+      console.error('Delete report error:', err);
+      triggerToast('Gagal terhubung ke server.');
+    }
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if ((!chatInputText.trim() && !chatPhotoPreview) || !activeChatReport) return;
@@ -213,11 +236,6 @@ export default function LostFoundPage({ currentUser, onGoBack }: LostFoundPagePr
     if (activeChatReport?.id === id) {
       setActiveChatReport(null);
     }
-  };
-
-  const handleDeleteReport = (id: string) => {
-    setReports(reports.filter(r => r.id !== id));
-    triggerToast('Laporan berhasil dihapus!');
   };
 
   const filteredReports = reports.filter((r) => {

@@ -28,6 +28,7 @@ export default function EventPage({
       if (response.ok && result.success) {
         const mappedEvents: CampusEvent[] = result.data.map((e: any) => ({
           id: e.id,
+          userId: e.user_id,
           title: e.judul,
           description: e.deskripsi?.replace(/\[Diselenggarakan oleh: .*?\]\n\[Waktu: .*?\]\n\n/, '') || e.deskripsi,
           date: e.tanggal_mulai ? new Date(e.tanggal_mulai).toLocaleDateString() : '-',
@@ -166,6 +167,29 @@ export default function EventPage({
   const handleShare = (id: string, title: string) => {
     navigator.clipboard?.writeText?.(`${window.location.origin}/event/${id}`);
     triggerToast(`Tautan event "${title.substring(0, 20)}..." disalin ke clipboard!`);
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus event ini?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/event/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setEvents(prev => prev.filter(e => e.id !== id));
+        triggerToast('Event berhasil dihapus!');
+      } else {
+        triggerToast(result.message || 'Gagal menghapus event.');
+      }
+    } catch (err) {
+      console.error('Delete event error:', err);
+      triggerToast('Gagal terhubung ke server.');
+    }
   };
 
   return (
@@ -320,20 +344,33 @@ export default function EventPage({
                     {evt.savedByUsers.length} Mahasiswa Menyimpan
                   </span>
 
-                  <button
-                    onClick={() => {
-                      handleSaveEvent(evt.id);
-                      const isSaved = evt.savedByUsers.includes(currentUser.id);
-                      triggerToast(isSaved ? 'Berhasil menghapus event dari kalender Anda' : 'Sukses menyimpan event ke kalender Anda!');
-                    }}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${isSaved
-                      ? 'bg-(--color-midnight-harbor) border-(--color-midnight-harbor) text-white'
-                      : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor) hover:bg-slate-50'
-                      }`}
-                  >
-                    <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
-                    {isSaved ? 'Tersimpan' : 'Gabung Event'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {evt.userId === currentUser.id && (
+                      <button
+                        onClick={() => handleDeleteEvent(evt.id)}
+                        className="flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold border border-red-200 bg-white text-red-500 hover:bg-red-50 transition-all cursor-pointer focus:outline-none"
+                        title="Hapus event ini"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Hapus
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        handleSaveEvent(evt.id);
+                        const isSaved = evt.savedByUsers.includes(currentUser.id);
+                        triggerToast(isSaved ? 'Berhasil menghapus event dari kalender Anda' : 'Sukses menyimpan event ke kalender Anda!');
+                      }}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${isSaved
+                        ? 'bg-(--color-midnight-harbor) border-(--color-midnight-harbor) text-white'
+                        : 'bg-white border-(--color-sea-fog) text-(--color-midnight-harbor) hover:bg-slate-50'
+                        }`}
+                    >
+                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
+                      {isSaved ? 'Tersimpan' : 'Gabung Event'}
+                    </button>
+                  </div>
                 </div>
 
               </div>

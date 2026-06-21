@@ -117,4 +117,63 @@ router.post('/', authMiddleware, upload.single('foto'), async (req, res) => {
   }
 });
 
+// ============================================================
+// DELETE /:id  —  Hapus data laporan barang (Hanya pemilik yang bisa)
+// ============================================================
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Cek kepemilikan
+    const { data: listing, error: checkError } = await supabase
+      .from('temuan_listings')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Laporan tidak ditemukan.',
+        data: null,
+      });
+    }
+
+    if (listing.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Anda tidak memiliki akses untuk menghapus laporan ini.',
+        data: null,
+      });
+    }
+
+    // 2. Hapus data
+    const { error: deleteError } = await supabase
+      .from('temuan_listings')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      return res.status(500).json({
+        success: false,
+        message: `Gagal menghapus laporan: ${deleteError.message}`,
+        data: null,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Laporan berhasil dihapus.',
+      data: null,
+    });
+  } catch (err) {
+    console.error('DELETE /temuan/:id error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan pada server.',
+      data: null,
+    });
+  }
+});
+
 module.exports = router;
