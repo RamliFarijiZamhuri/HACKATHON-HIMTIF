@@ -10,7 +10,7 @@ interface KosFinderPageProps {
 export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPageProps) {
   const [kosList, setKosList] = useState<KosProperty[]>([]);
   const [activeGender, setActiveGender] = useState<string>('all');
-  const [maxPrice, setMaxPrice] = useState<number>(1500000);
+  const [maxPrice, setMaxPrice] = useState<number>(5000000);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []) as File[];
     if (formPhotos.length + files.length > 10) {
       triggerToast('Maksimal 10 foto kos!');
       return;
@@ -80,7 +80,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
           id: k.id,
           title: k.nama_kos,
           address: k.alamat,
-          priceMonthly: k.harga_bulanan,
+          priceMonthly: Number(String(k.harga_bulanan).replace(/\D/g, '')) || 0,
           gender: k.gender,
           facilities: k.fasilitas || [],
           distanceFromCampus: k.jarak_kampus,
@@ -200,7 +200,10 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
 
   const filteredKos = sortedKos.filter((k) => {
     const matchesGender = activeGender === 'all' || k.gender === activeGender;
-    const matchesPrice = k.priceMonthly <= maxPrice;
+    const parsedKosPrice = parseInt(String(k.priceMonthly), 10) || 0;
+    const parsedMaxPrice = parseInt(String(maxPrice), 10) || 0;
+    const matchesPrice = parsedKosPrice <= parsedMaxPrice;
+    
     const matchesSearch = k.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           k.address.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesGender && matchesPrice && matchesSearch;
@@ -340,7 +343,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
           <input
             type="range"
             min={500000}
-            max={2000000}
+            max={5000000}
             step={50000}
             value={maxPrice}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
