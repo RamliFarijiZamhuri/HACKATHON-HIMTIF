@@ -30,13 +30,13 @@ export default function Navbar({
           id="nav-logo"
         >
           <Logo size={40} className="group-hover:scale-105 transition-transform duration-200 translate-x-2 " />
-          <span className="text-2xl tracking-tight text-(--color-midnight-harbor) transition-colors" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 900 }}>
+          <span className="text-lg sm:text-2xl tracking-tight text-(--color-midnight-harbor) transition-colors" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 900 }}>
             NPAM<span className="text-(--color-signal-blue)">SPACE</span>
           </span>
         </button>
 
         {/* Navigation Content */}
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-6">
           {currentUser ? (
             <>
               {/* Back to Grid / Main button */}
@@ -107,14 +107,14 @@ export default function Navbar({
                   const el = document.getElementById('features-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="text-sm font-semibold text-(--color-slate-channel) hover:text-(--color-midnight-harbor) cursor-pointer transition-colors"
+                className="hidden sm:block text-xs sm:text-sm font-semibold text-(--color-slate-channel) hover:text-(--color-midnight-harbor) cursor-pointer transition-colors"
               >
                 Fitur Unggulan
               </button>
 
               <button
                 onClick={() => setActiveTab('login')}
-                className="text-sm font-semibold text-(--color-midnight-harbor) hover:text-(--color-signal-blue) cursor-pointer transition-colors"
+                className="text-xs sm:text-sm font-semibold text-(--color-midnight-harbor) hover:text-(--color-signal-blue) cursor-pointer transition-colors"
                 id="nav-login-link"
               >
                 Masuk
@@ -122,7 +122,7 @@ export default function Navbar({
 
               <button
                 onClick={() => setActiveTab('register')}
-                className="rounded-full bg-(--color-signal-blue) px-4 py-2 text-sm font-semibold text-white cursor-pointer shadow-md hover:opacity-90 transition-all hover:scale-103"
+                className="rounded-full bg-(--color-signal-blue) px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white cursor-pointer shadow-md hover:opacity-90 transition-all hover:scale-103"
                 id="nav-signup-btn"
               >
                 Daftar Akun
