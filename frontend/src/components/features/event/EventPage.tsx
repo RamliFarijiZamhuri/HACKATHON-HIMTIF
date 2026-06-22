@@ -23,7 +23,8 @@ export default function EventPage({
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/event`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/event`, { headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND, 'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND } });
       const result = await response.json();
       if (response.ok && result.success) {
         const mappedEvents: CampusEvent[] = result.data.map((e: any) => ({
@@ -123,6 +124,7 @@ export default function EventPage({
       const response = await fetch(`${import.meta.env.VITE_API_URL}/event`, {
         method: 'POST',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Authorization': `Bearer ${token}`
         },
         body: formData
@@ -176,6 +178,7 @@ export default function EventPage({
       const response = await fetch(`${import.meta.env.VITE_API_URL}/event/${id}`, {
         method: 'DELETE',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Authorization': `Bearer ${token}`
         }
       });

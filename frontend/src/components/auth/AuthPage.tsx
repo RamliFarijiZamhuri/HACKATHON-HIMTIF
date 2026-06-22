@@ -50,7 +50,8 @@ export default function AuthPage({
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPass })
       });
 
@@ -103,7 +104,8 @@ export default function AuthPage({
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nim: regNim,
           nama: regName,

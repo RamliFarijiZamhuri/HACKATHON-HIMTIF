@@ -156,6 +156,7 @@ export default function ProfileSettingsPage({
       const response = await fetch(`${import.meta.env.VITE_API_URL}/user/upgrade-space-plus`, {
         method: 'PUT',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -724,6 +725,7 @@ export default function ProfileSettingsPage({
                           const response = await fetch(`${import.meta.env.VITE_API_URL}/user/upgrade-verification`, {
                             method: 'PUT',
                             headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
                               'Content-Type': 'application/json',
                               'Authorization': `Bearer ${token}`
                             },

@@ -73,7 +73,8 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
 
   const fetchKosList = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/kos`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/kos`, { headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND, 'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND } });
       const result = await response.json();
       if (response.ok && result.success) {
         const mappedKos: KosProperty[] = result.data.map((k: any) => ({
@@ -135,6 +136,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
       const response = await fetch(`${import.meta.env.VITE_API_URL}/kos`, {
         method: 'POST',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Authorization': `Bearer ${token}`
         },
         body: formData
@@ -166,6 +168,7 @@ export default function KosFinderPage({ currentUser, onGoBack }: KosFinderPagePr
       const response = await fetch(`${import.meta.env.VITE_API_URL}/kos/${id}`, {
         method: 'DELETE',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Authorization': `Bearer ${token}`
         }
       });

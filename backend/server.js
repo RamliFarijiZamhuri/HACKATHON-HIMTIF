@@ -40,6 +40,34 @@ app.use(express.urlencoded({ extended: true }));
 // ROUTES
 // ============================================================
 
+// Middleware Keamanan Berlapis untuk Rute API
+app.use('/api', (req, res, next) => {
+  // --- Lapisan 1: UX Filter (Blokir Navigasi Langsung dari Browser) ---
+  const acceptHeader = req.headers.accept || '';
+  const secFetchDest = req.headers['sec-fetch-dest'];
+  
+  if (req.method === 'GET' && (acceptHeader.includes('text/html') || secFetchDest === 'document')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses langsung ke API tidak diizinkan. Silakan akses melalui aplikasi utama.'
+    });
+  }
+
+  // --- Lapisan 2: Hard Security (Validasi API Key) ---
+  const apiKey = req.headers['x-api-key'];
+  const validApiKey = process.env.KODE_RAHASIA_BACKEND;
+
+  // Jika API Key tidak disertakan atau salah
+  if (!apiKey || apiKey !== validApiKey) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized: Akses ditolak. API Key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  next();
+});
+
 const eventRoutes = require('./routes/event');
 const forumRoutes = require('./routes/forum');
 const kosRoutes = require('./routes/kos');

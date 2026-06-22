@@ -49,7 +49,8 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
     setShowCreateForm(false);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${post.id}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${post.id}`, { headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND, 'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND } });
       const result = await response.json();
       if (response.ok && result.success) {
         // Map backend comments to frontend ForumComment type
@@ -75,7 +76,8 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/forum`, { headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND, 'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND } });
       const result = await response.json();
       if (response.ok && result.success) {
         const likedPostIds = JSON.parse(localStorage.getItem(`liked_posts_${currentUser.id}`) || '[]');
@@ -121,6 +123,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
       const response = await fetch(`${import.meta.env.VITE_API_URL}/forum`, {
         method: 'POST',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -157,6 +160,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
       const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${postId}`, {
         method: 'DELETE',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Authorization': `Bearer ${token}`
         }
       });
@@ -186,6 +190,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
       const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${postId}/like`, {
         method: 'POST',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Authorization': `Bearer ${token}`
         }
       });
@@ -232,6 +237,7 @@ export default function CommunityPage({ currentUser, onGoBack }: CommunityPagePr
       const response = await fetch(`${import.meta.env.VITE_API_URL}/forum/${selectedPost.id}/comment`, {
         method: 'POST',
         headers: {
+        'x-api-key': import.meta.env.VITE_KODE_RAHASIA_FRONTEND,
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
